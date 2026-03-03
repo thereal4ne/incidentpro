@@ -1,5 +1,5 @@
 from django.utils import timezone
-from incidents.models import Incident, Activity
+from incidents.models import Incident
 
 
 def evaluate_incident_sla(incident):

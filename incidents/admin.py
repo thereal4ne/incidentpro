@@ -12,7 +12,7 @@ class IncidentAdmin(admin.ModelAdmin):
         "reported_by",
         "assigned_to",
         "created_at",
-         "due_at",
+        "due_at",
         "is_overdue",
         "is_escalated",
     )

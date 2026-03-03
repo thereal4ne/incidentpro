@@ -1,6 +1,6 @@
 import os
 from celery import Celery
-from celery.schedules import crontab
+
 
 # Set default Django settings module
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'cicdproject.settings')

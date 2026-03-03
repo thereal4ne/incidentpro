@@ -39,7 +39,7 @@ urlpatterns = [
         views.upload_attachment,
         name="upload_attachment",
     ),
-     # Attachments
+    # Attachments
     path(
         "incidents/<int:pk>/attachments/",
         views.list_attachments,
