@@ -55,8 +55,8 @@ jobs:
           coverage run manage.py test
           coverage report --fail-under=70
 
-      - name: Trigger Render Deploy
-        if: success()
-        env:
-          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
-        run: curl "$RENDER_DEPLOY_HOOK"
+     # - name: Trigger Render Deploy
+      #  if: success()
+       # env:
+        #  RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        #run: curl "$RENDER_DEPLOY_HOOK"
