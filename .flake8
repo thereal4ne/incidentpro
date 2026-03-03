@@ -1,4 +1,14 @@
 [flake8]
 max-line-length = 120
-exclude = migrations,venv,__pycache__,manage.py
-ignore = E302,E303
+
+exclude =
+    migrations,
+    venv,
+    env,
+    __pycache__,
+    node_modules,
+    frontend/node_modules,
+    .git,
+    .github
+
+ignore = E302, E303, W503

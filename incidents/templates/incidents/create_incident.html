@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Incident</title>
+</head>
+<body>
+    <h1>Report New Incident</h1>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Submit Incident</button>
+    </form>
+
+    <br>
+    <a href="/incidents/">Back to Incident List</a>
+</body>
+</html>

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Incidents</title>
+</head>
+<body>
+    <h1>Incident Management</h1>
+
+    <a href="{% url 'create_incident' %}">Report New Incident</a>
+    <hr>
+
+    <ul>
+        {% for incident in incidents %}
+            <li>
+                <strong>{{ incident.title }}</strong><br>
+                Priority: {{ incident.priority }} |
+                Status: {{ incident.status }} |
+                Created: {{ incident.created_at }}
+                <br><br>
+
+                <a href="{% url 'update_status' incident.id 'IN_PROGRESS' %}">Start</a> |
+                <a href="{% url 'update_status' incident.id 'RESOLVED' %}">Resolve</a> |
+                <a href="{% url 'update_status' incident.id 'CLOSED' %}">Close</a>
+            </li>
+            <hr>
+        {% empty %}
+            <p>No incidents reported yet.</p>
+        {% endfor %}
+    </ul>
+</body>
+</html>

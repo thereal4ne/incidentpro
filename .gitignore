@@ -6,3 +6,22 @@ venv/
 .env/
 .idea/
 .vscode/
+node_modules/
+frontend/node_modules/
+
+# Django media uploads
+media/
+
+# React build output
+frontend/build/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Coverage reports
+.coverage
+htmlcov/
+
+# Static files
+staticfiles/
