@@ -5,6 +5,8 @@ import Login from "./Login";
 import AttachmentSection from "./components/AttachmentSection";
 import "./App.css";
 import AdminHome from "./pages/AdminHome";
+import ManageUsers from "./pages/ManageUsers";
+
 
 const API = "http://127.0.0.1:8000";
 
@@ -231,7 +233,7 @@ const updateStatus = async (id, newStatus, assignedUser) => {
   return (
     <div className="dashboard-page">
 
-     {/* ── NAV ── */}
+   {/* ── NAV ── */}
 <nav className="dashboard-nav">
   <div className="nav-left">
     <div className="nav-logo">
@@ -243,6 +245,11 @@ const updateStatus = async (id, newStatus, assignedUser) => {
     {userRole === "ADMIN" && (
       <button className="report-btn" onClick={() => navigate("/admin")}>
         📊 Overview
+      </button>
+    )}
+    {userRole === "ADMIN" && (
+      <button className="report-btn" onClick={() => navigate("/manage-users")}>
+        👥 Users
       </button>
     )}
     <button className="report-btn" onClick={() => navigate("/report")}>
@@ -478,6 +485,7 @@ function App() {
      <Route path="/" element={localStorage.getItem("access_token") ? <Dashboard /> : <Navigate to="/login" replace />} />
       <Route path="/report" element={<ReportIncident />} />
       <Route path="/admin" element={localStorage.getItem("access_token") ? <AdminHome /> : <Navigate to="/login" replace />} />
+      <Route path="/manage-users" element={localStorage.getItem("access_token") ? <ManageUsers /> : <Navigate to="/login" replace />} />
     </Routes>
   );
 }
