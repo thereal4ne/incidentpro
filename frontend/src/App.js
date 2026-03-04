@@ -4,6 +4,7 @@ import { Routes, Route, useNavigate, Navigate } from "react-router-dom";
 import Login from "./Login";
 import AttachmentSection from "./components/AttachmentSection";
 import "./App.css";
+import AdminHome from "./pages/AdminHome";
 
 const API = "http://127.0.0.1:8000";
 
@@ -41,7 +42,7 @@ const pausePollingRef = React.useRef(false);
   const [visibleActivities, setVisibleActivities] = useState({});
 
   // ================= USER INFO =================
-  const fetchUserInfo = useCallback(async () => {
+ const fetchUserInfo = useCallback(async () => {
     const token = getToken();
     if (!token) return;
 
@@ -71,7 +72,6 @@ const pausePollingRef = React.useRef(false);
       }
     }
   }, [navigate]);
-
   // ================= INCIDENTS =================
   const fetchIncidents = useCallback(async () => {
     const token = getToken();
@@ -231,32 +231,37 @@ const updateStatus = async (id, newStatus, assignedUser) => {
   return (
     <div className="dashboard-page">
 
-      {/* ── NAV ── */}
-      <nav className="dashboard-nav">
-        <div className="nav-left">
-          <div className="nav-logo">
-            <span className="nav-logo-icon">⚡</span>
-            IncidentPro
-          </div>
-        </div>
-        <div className="nav-user">
-          <button className="report-btn" onClick={() => navigate("/report")}>
-            + New Incident
-          </button>
-          <div className="user-chip">
-            <div className="user-avatar">{username?.[0]?.toUpperCase()}</div>
-            <div className="user-meta">
-              <span className="user-name">{username}</span>
-              <span className="user-role">{userRole}</span>
-            </div>
-          </div>
-          <button className="logout-btn" onClick={() => { localStorage.clear(); navigate("/login"); }}>
-            Sign out
-          </button>
-        </div>
-      </nav>
+     {/* ── NAV ── */}
+<nav className="dashboard-nav">
+  <div className="nav-left">
+    <div className="nav-logo">
+      <span className="nav-logo-icon">⚡</span>
+      IncidentPro
+    </div>
+  </div>
+  <div className="nav-user">
+    {userRole === "ADMIN" && (
+      <button className="report-btn" onClick={() => navigate("/admin")}>
+        📊 Overview
+      </button>
+    )}
+    <button className="report-btn" onClick={() => navigate("/report")}>
+      + New Incident
+    </button>
+    <div className="user-chip">
+      <div className="user-avatar">{username?.[0]?.toUpperCase()}</div>
+      <div className="user-meta">
+        <span className="user-name">{username}</span>
+        <span className="user-role">{userRole}</span>
+      </div>
+    </div>
+    <button className="logout-btn" onClick={() => { localStorage.clear(); navigate("/login"); }}>
+      Sign out
+    </button>
+  </div>
+</nav>
 
-      <div className="dashboard-content">
+<div className="dashboard-content">
 
         {/* ── PAGE HEADER ── */}
         <div className="page-header">
@@ -470,8 +475,9 @@ function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
-      <Route path="/" element={token ? <Dashboard /> : <Navigate to="/login" replace />} />
+     <Route path="/" element={localStorage.getItem("access_token") ? <Dashboard /> : <Navigate to="/login" replace />} />
       <Route path="/report" element={<ReportIncident />} />
+      <Route path="/admin" element={localStorage.getItem("access_token") ? <AdminHome /> : <Navigate to="/login" replace />} />
     </Routes>
   );
 }
