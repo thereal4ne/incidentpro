@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include, re_path
 from .views import FrontendAppView
-from rest_framework_simplejwt.views import  TokenRefreshView
+from rest_framework_simplejwt.views import TokenRefreshView
 from accounts.views import MyTokenObtainPairView
 
 from django.conf import settings
