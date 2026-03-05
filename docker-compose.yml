@@ -73,3 +73,7 @@ services:
 
 volumes:
   media_files:
+
+environment:
+  - CELERY_BROKER_URL=redis://redis:6379/0
+  - ALLOWED_HOSTS=127.0.0.1,localhost,0.0.0.0
