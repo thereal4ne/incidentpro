@@ -1,8 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import './App.css';
-
-const API = "http://127.0.0.1:8000";
+import API from "./config";
 
 function Login() {
   const navigate = useNavigate();
@@ -26,18 +25,22 @@ function Login() {
       const data = await res.json();
 
       if (res.ok) {
-        localStorage.setItem("access_token", data.access);
-        localStorage.setItem("refresh_token", data.refresh);
-        navigate("/"); 
-      } else {
-        setError(data.detail || "Invalid username or password");
-      }
-    } catch (err) {
-      setError("Server unreachable. Check if Django is running.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  localStorage.setItem("access_token", data.access);
+  localStorage.setItem("refresh_token", data.refresh);
+  if (data.role === "ADMIN") {
+    navigate("/admin");
+  } else {
+    navigate("/home");
+  }
+} else {
+  setError(data.detail || "Invalid username or password");
+}
+} catch (err) {
+  setError("Server unreachable. Check if Django is running.");
+} finally {
+  setLoading(false);
+}
+};
 
   return (
     <div className="login-page">

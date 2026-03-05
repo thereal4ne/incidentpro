@@ -6,9 +6,8 @@ import AttachmentSection from "./components/AttachmentSection";
 import "./App.css";
 import AdminHome from "./pages/AdminHome";
 import ManageUsers from "./pages/ManageUsers";
-
-
-const API = "http://127.0.0.1:8000";
+import EmployeeHome from "./pages/EmployeeHome";
+import API from "./config";
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -242,19 +241,24 @@ const updateStatus = async (id, newStatus, assignedUser) => {
     </div>
   </div>
   <div className="nav-user">
-    {userRole === "ADMIN" && (
-      <button className="report-btn" onClick={() => navigate("/admin")}>
-        📊 Overview
-      </button>
-    )}
-    {userRole === "ADMIN" && (
-      <button className="report-btn" onClick={() => navigate("/manage-users")}>
-        👥 Users
-      </button>
-    )}
-    <button className="report-btn" onClick={() => navigate("/report")}>
-      + New Incident
-    </button>
+   {userRole === "ADMIN" && (
+  <button className="report-btn" onClick={() => navigate("/admin")}>
+    📊 Overview
+  </button>
+)}
+{userRole === "ADMIN" && (
+  <button className="report-btn" onClick={() => navigate("/manage-users")}>
+    👥 Users
+  </button>
+)}
+{userRole === "EMPLOYEE" && (
+  <button className="report-btn" onClick={() => navigate("/home")}>
+    🏠 Home
+  </button>
+)}
+<button className="report-btn" onClick={() => navigate("/report")}>
+  + New Incident
+</button>
     <div className="user-chip">
       <div className="user-avatar">{username?.[0]?.toUpperCase()}</div>
       <div className="user-meta">
@@ -486,6 +490,7 @@ function App() {
       <Route path="/report" element={<ReportIncident />} />
       <Route path="/admin" element={localStorage.getItem("access_token") ? <AdminHome /> : <Navigate to="/login" replace />} />
       <Route path="/manage-users" element={localStorage.getItem("access_token") ? <ManageUsers /> : <Navigate to="/login" replace />} />
+      <Route path="/home" element={localStorage.getItem("access_token") ? <EmployeeHome /> : <Navigate to="/login" replace />} />
     </Routes>
   );
 }

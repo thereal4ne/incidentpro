@@ -5,8 +5,8 @@ import {
   LineChart, Line, CartesianGrid, Legend, PieChart, Pie, Cell,
 } from "recharts";
 import "./AdminHome.css";
-
-const API = "http://127.0.0.1:8000";
+import "./EmployeeHome.css";
+import API from "../config";
 
 const PRIORITY_COLORS = {
   CRITICAL: "#ef4444", HIGH: "#f97316", MEDIUM: "#eab308", LOW: "#22c55e",
@@ -18,6 +18,11 @@ const STATUS_COLORS = {
 export default function AdminHome() {
   const navigate = useNavigate();
   const getToken = () => localStorage.getItem("access_token");
+
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [pwForm, setPwForm] = useState({ current: "", newPw: "", confirm: "" });
+  const [pwMsg, setPwMsg] = useState(null);
+  const [pwLoading, setPwLoading] = useState(false);
 
   const [username, setUsername] = useState("");
   const [incidents, setIncidents] = useState([]);
@@ -53,6 +58,38 @@ export default function AdminHome() {
     return () => clearInterval(interval);
   }, [fetchData]);
 
+  const handleChangePassword = async () => {
+    if (!pwForm.current || !pwForm.newPw || !pwForm.confirm) {
+      setPwMsg({ type: "error", text: "All fields are required." });
+      return;
+    }
+    if (pwForm.newPw !== pwForm.confirm) {
+      setPwMsg({ type: "error", text: "New passwords do not match." });
+      return;
+    }
+    if (pwForm.newPw.length < 8) {
+      setPwMsg({ type: "error", text: "Password must be at least 8 characters." });
+      return;
+    }
+    setPwLoading(true);
+    setPwMsg(null);
+    const token = getToken();
+    const res = await fetch(`${API}/api/accounts/change-password/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ current_password: pwForm.current, new_password: pwForm.newPw }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      setPwMsg({ type: "success", text: "Password changed successfully!" });
+      setPwForm({ current: "", newPw: "", confirm: "" });
+      setTimeout(() => { setShowChangePassword(false); setPwMsg(null); }, 2000);
+    } else {
+      setPwMsg({ type: "error", text: data.error || "Failed to change password." });
+    }
+    setPwLoading(false);
+  };
+
   // Derived stats
   const total = incidents.length;
   const open = incidents.filter((i) => i.status === "OPEN").length;
@@ -63,17 +100,14 @@ export default function AdminHome() {
     (i) => i.is_overdue && !["RESOLVED", "CLOSED"].includes(i.status)
   ).length;
   const escalated = incidents.filter((i) => i.is_escalated).length;
-  const resolutionRate =
-    total > 0 ? Math.round(((resolved + closed) / total) * 100) : 0;
+  const resolutionRate = total > 0 ? Math.round(((resolved + closed) / total) * 100) : 0;
 
-  // Priority chart
   const priorityData = ["CRITICAL", "HIGH", "MEDIUM", "LOW"].map((p) => ({
     name: p,
     count: incidents.filter((i) => i.priority === p).length,
     color: PRIORITY_COLORS[p],
   }));
 
-  // Status pie
   const statusData = ["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"]
     .map((s) => ({
       name: s.replace("_", " "),
@@ -82,7 +116,6 @@ export default function AdminHome() {
     }))
     .filter((s) => s.value > 0);
 
-  // Last 7 days trend
   const last7Days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - (6 - i));
@@ -99,22 +132,16 @@ export default function AdminHome() {
     const updatedDate = new Date(inc.updated_at).toDateString();
     last7Days.forEach((day) => {
       if (day.fullDate === createdDate) day.created += 1;
-      if (
-        day.fullDate === updatedDate &&
-        ["RESOLVED", "CLOSED"].includes(inc.status)
-      ) {
+      if (day.fullDate === updatedDate && ["RESOLVED", "CLOSED"].includes(inc.status)) {
         day.resolved += 1;
       }
     });
   });
 
-  // Employee performance
   const employeeStats = users
     .map((u) => {
       const assigned = incidents.filter((i) => i.assigned_to === u.username);
-      const resolvedCount = assigned.filter((i) =>
-        ["RESOLVED", "CLOSED"].includes(i.status)
-      ).length;
+      const resolvedCount = assigned.filter((i) => ["RESOLVED", "CLOSED"].includes(i.status)).length;
       const overdueCount = assigned.filter(
         (i) => i.is_overdue && !["RESOLVED", "CLOSED"].includes(i.status)
       ).length;
@@ -123,27 +150,20 @@ export default function AdminHome() {
         total: assigned.length,
         resolved: resolvedCount,
         overdue: overdueCount,
-        open: assigned.filter((i) =>
-          ["OPEN", "IN_PROGRESS"].includes(i.status)
-        ).length,
-        rate:
-          assigned.length > 0
-            ? Math.round((resolvedCount / assigned.length) * 100)
-            : 0,
+        open: assigned.filter((i) => ["OPEN", "IN_PROGRESS"].includes(i.status)).length,
+        rate: assigned.length > 0 ? Math.round((resolvedCount / assigned.length) * 100) : 0,
       };
     })
     .filter((e) => e.total > 0)
     .sort((a, b) => b.total - a.total);
 
-  // Overdue incidents
   const overdueIncidents = incidents
     .filter((i) => i.is_overdue && !["RESOLVED", "CLOSED"].includes(i.status))
     .sort((a, b) => new Date(a.due_at) - new Date(b.due_at))
     .slice(0, 6);
 
   const hour = new Date().getHours();
-  const greeting =
-    hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
   if (loading) {
     return (
@@ -157,24 +177,81 @@ export default function AdminHome() {
   return (
     <div className="ah-page">
 
+      {/* CHANGE PASSWORD MODAL */}
+      {showChangePassword && (
+        <div className="eh-modal-overlay" onClick={() => setShowChangePassword(false)}>
+          <div className="eh-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="eh-modal-header">
+              <h3>🔑 Change Password</h3>
+              <button
+                className="eh-modal-close"
+                onClick={() => {
+                  setShowChangePassword(false);
+                  setPwMsg(null);
+                  setPwForm({ current: "", newPw: "", confirm: "" });
+                }}
+              >✕</button>
+            </div>
+            <div className="eh-modal-body">
+              {pwMsg && (
+                <div className={`eh-pw-msg eh-pw-msg--${pwMsg.type}`}>{pwMsg.text}</div>
+              )}
+              <div className="eh-field">
+                <label>Current Password</label>
+                <input
+                  type="password"
+                  value={pwForm.current}
+                  onChange={(e) => setPwForm({ ...pwForm, current: e.target.value })}
+                  placeholder="Enter current password"
+                />
+              </div>
+              <div className="eh-field">
+                <label>New Password</label>
+                <input
+                  type="password"
+                  value={pwForm.newPw}
+                  onChange={(e) => setPwForm({ ...pwForm, newPw: e.target.value })}
+                  placeholder="Min 8 characters"
+                />
+              </div>
+              <div className="eh-field">
+                <label>Confirm New Password</label>
+                <input
+                  type="password"
+                  value={pwForm.confirm}
+                  onChange={(e) => setPwForm({ ...pwForm, confirm: e.target.value })}
+                  placeholder="Repeat new password"
+                />
+              </div>
+              <button className="eh-btn-primary" onClick={handleChangePassword} disabled={pwLoading}>
+                {pwLoading ? "Changing..." : "Change Password"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* NAV */}
       <nav className="ah-nav">
         <div className="ah-nav-left">
           <div className="ah-logo">⚡ IncidentPro</div>
           <div className="ah-nav-links">
             <button className="ah-nav-link ah-nav-link--active">Overview</button>
-             <button className="ah-nav-link" onClick={() => navigate("/")}>Incidents</button>
-            <button className="ah-nav-link" onClick={() => navigate("/report")}>
-              + New
-            </button>
+            <button className="ah-nav-link" onClick={() => navigate("/")}>Incidents</button>
+            <button className="ah-nav-link" onClick={() => navigate("/manage-users")}>👥 Users</button>
+            <button className="ah-nav-link" onClick={() => navigate("/report")}>+ New</button>
           </div>
         </div>
         <div className="ah-nav-right">
-          <div className="ah-user-chip">
+          <div
+            className="ah-user-chip"
+            style={{ cursor: "pointer" }}
+            onClick={() => setShowChangePassword(true)}
+          >
             <div className="ah-avatar">{username?.[0]?.toUpperCase()}</div>
             <div className="ah-user-meta">
               <span className="ah-username">{username}</span>
-              <span className="ah-role">ADMIN</span>
+              <span className="ah-role">ADMIN · 🔑 Change Password</span>
             </div>
           </div>
           <button
@@ -228,11 +305,8 @@ export default function AdminHome() {
 
         {/* CHARTS */}
         <div className="ah-charts-row">
-
           <div className="ah-chart-card ah-chart-card--wide">
-            <div className="ah-chart-header">
-              <h3>Incident Trends — Last 7 Days</h3>
-            </div>
+            <div className="ah-chart-header"><h3>Incident Trends — Last 7 Days</h3></div>
             <ResponsiveContainer width="100%" height={220}>
               <LineChart data={last7Days}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -240,10 +314,8 @@ export default function AdminHome() {
                 <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
                 <Tooltip />
                 <Legend />
-                <Line type="monotone" dataKey="created" stroke="#3b82f6"
-                  strokeWidth={2} dot={{ r: 4 }} name="Created" />
-                <Line type="monotone" dataKey="resolved" stroke="#10b981"
-                  strokeWidth={2} dot={{ r: 4 }} name="Resolved" />
+                <Line type="monotone" dataKey="created" stroke="#3b82f6" strokeWidth={2} dot={{ r: 4 }} name="Created" />
+                <Line type="monotone" dataKey="resolved" stroke="#10b981" strokeWidth={2} dot={{ r: 4 }} name="Resolved" />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -252,8 +324,12 @@ export default function AdminHome() {
             <div className="ah-chart-header"><h3>Status Distribution</h3></div>
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
-                <Pie data={statusData} cx="50%" cy="50%"
-                  innerRadius={55} outerRadius={85} paddingAngle={3} dataKey="value">
+                <Pie
+                  data={statusData}
+                  cx="50%" cy="50%"
+                  innerRadius={55} outerRadius={85}
+                  paddingAngle={3} dataKey="value"
+                >
                   {statusData.map((entry, index) => (
                     <Cell key={index} fill={entry.color} />
                   ))}
@@ -279,13 +355,10 @@ export default function AdminHome() {
               </BarChart>
             </ResponsiveContainer>
           </div>
-
         </div>
 
         {/* BOTTOM ROW */}
         <div className="ah-bottom-row">
-
-          {/* Overdue */}
           <div className="ah-panel">
             <div className="ah-panel-header">
               <h3>🚨 Needs Immediate Attention</h3>
@@ -329,7 +402,6 @@ export default function AdminHome() {
             )}
           </div>
 
-          {/* Employee performance */}
           <div className="ah-panel">
             <div className="ah-panel-header">
               <h3>👥 Employee Performance</h3>
@@ -345,14 +417,10 @@ export default function AdminHome() {
                 {employeeStats.map((emp) => (
                   <div key={emp.username} className="ah-emp-item">
                     <div className="ah-emp-left">
-                      <div className="ah-emp-avatar">
-                        {emp.username[0].toUpperCase()}
-                      </div>
+                      <div className="ah-emp-avatar">{emp.username[0].toUpperCase()}</div>
                       <div>
                         <div className="ah-emp-name">{emp.username}</div>
-                        <div className="ah-emp-meta">
-                          {emp.total} assigned · {emp.open} active
-                        </div>
+                        <div className="ah-emp-meta">{emp.total} assigned · {emp.open} active</div>
                       </div>
                     </div>
                     <div className="ah-emp-right">
@@ -364,10 +432,7 @@ export default function AdminHome() {
                       </div>
                       <div className="ah-progress-wrap">
                         <div className="ah-progress-bar">
-                          <div
-                            className="ah-progress-fill"
-                            style={{ width: `${emp.rate}%` }}
-                          />
+                          <div className="ah-progress-fill" style={{ width: `${emp.rate}%` }} />
                         </div>
                         <span className="ah-progress-label">{emp.rate}%</span>
                       </div>
@@ -377,7 +442,6 @@ export default function AdminHome() {
               </div>
             )}
           </div>
-
         </div>
       </div>
     </div>

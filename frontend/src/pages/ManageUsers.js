@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import "./ManageUsers.css";
-
-const API = "http://127.0.0.1:8000";
+import API from "../config";
 
 export default function ManageUsers() {
   const navigate = useNavigate();

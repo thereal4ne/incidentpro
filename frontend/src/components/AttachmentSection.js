@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import API from "../config";
 
 function formatFileSize(size) {
   if (size < 1024) return size + " B";
@@ -15,7 +16,7 @@ function getFileIcon(type) {
   return "📁";
 }
 
-const API_BASE = "http://127.0.0.1:8000";
+
 
 export default function AttachmentSection({ incidentId, token, userRole }) {
   const [attachments, setAttachments] = useState([]);
@@ -28,7 +29,7 @@ export default function AttachmentSection({ incidentId, token, userRole }) {
 
   const fetchAttachments = async () => {
     const res = await axios.get(
-      `${API_BASE}/api/incidents/${incidentId}/attachments/`,
+      `${API}/api/incidents/${incidentId}/attachments/`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
     setAttachments(res.data);
@@ -44,7 +45,7 @@ export default function AttachmentSection({ incidentId, token, userRole }) {
     formData.append("file", selectedFile);
 
     await axios.post(
-      `${API_BASE}/api/incidents/${incidentId}/attachments/upload/`,
+      `${API}/api/incidents/${incidentId}/attachments/upload/`,
       formData,
       {
         headers: {
@@ -60,7 +61,7 @@ export default function AttachmentSection({ incidentId, token, userRole }) {
 
   const handleDownload = (id) => {
     window.open(
-      `${API_BASE}/api/incidents/${incidentId}/attachments/${id}/download/`,
+      `${API}/api/incidents/${incidentId}/attachments/${id}/download/`,
       "_blank"
     );
   };
@@ -70,7 +71,7 @@ export default function AttachmentSection({ incidentId, token, userRole }) {
       return;
 
     await axios.delete(
-      `${API_BASE}/api/incidents/${incidentId}/attachments/${id}/delete/`,
+      `${API}/api/incidents/${incidentId}/attachments/${id}/delete/`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
