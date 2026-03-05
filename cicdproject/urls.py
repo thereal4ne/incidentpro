@@ -1,6 +1,5 @@
 from django.contrib import admin
-from django.urls import path, include, re_path
-from .views import FrontendAppView
+from django.urls import path, include
 from rest_framework_simplejwt.views import TokenRefreshView
 from accounts.views import MyTokenObtainPairView
 
@@ -20,9 +19,7 @@ urlpatterns = [
 
     # ===== INCIDENTS =====
     path("api/", include("incidents.urls")),
-
-    # ===== REACT FRONTEND (MUST BE LAST) =====
-    re_path(r"^.*$", FrontendAppView.as_view(), name="frontend"),
 ]
+
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
