@@ -25,4 +25,4 @@ RUN python manage.py collectstatic --noinput
 
 EXPOSE 8000
 
-CMDCMD python manage.py migrate && python manage.py createadmin && gunicorn cicdproject.wsgi:application --bind 0.0.0.0:8000
+CMD python manage.py migrate && python manage.py createadmin && gunicorn cicdproject.wsgi:application --bind 0.0.0.0:8000
