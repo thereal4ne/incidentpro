@@ -1,8 +1,8 @@
-from .models import IncidentActivity
+from .models import Activity
 
 
 def log_activity(incident, actor, action):
-    IncidentActivity.objects.create(
+    Activity.objects.create(
         incident=incident,
         actor=actor,
         action=action

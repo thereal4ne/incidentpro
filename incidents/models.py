@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import timedelta
+from django.conf import settings
 
 
 class Incident(models.Model):
@@ -18,6 +19,7 @@ class Incident(models.Model):
         ('IN_PROGRESS', 'In Progress'),
         ('RESOLVED', 'Resolved'),
         ('CLOSED', 'Closed'),
+        ('ESCALATED', 'Escalated'),
     ]
 
     title = models.CharField(max_length=255)
@@ -60,6 +62,27 @@ class Incident(models.Model):
     due_at = models.DateTimeField(null=True, blank=True)
     is_overdue = models.BooleanField(default=False)
     is_escalated = models.BooleanField(default=False)
+    escalation_reason = models.TextField(null=True, blank=True)
+    escalated_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='escalated_incidents'
+    )
+    escalated_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['status'], name='incident_status_idx'),
+            models.Index(fields=['priority'], name='incident_priority_idx'),
+            models.Index(fields=['assigned_to'], name='incident_assigned_idx'),
+            models.Index(fields=['reported_by'], name='incident_reported_idx'),
+            models.Index(fields=['is_overdue'], name='incident_overdue_idx'),
+            models.Index(fields=['is_escalated'], name='incident_escalated_idx'),
+            models.Index(fields=['created_at'], name='incident_created_idx'),
+            models.Index(fields=['-created_at'], name='incident_created_desc_idx'),
+        ]
 
     def __str__(self):
         return self.title
@@ -81,7 +104,7 @@ class Incident(models.Model):
     # AUTO-SET SLA ON CREATION
     # ===============================
     def save(self, *args, **kwargs):
-        is_new = not self.pk  # ← check before saving
+        is_new = not self.pk
 
         if is_new and not self.due_at:
             self.due_at = self.sla_deadline()
@@ -89,7 +112,7 @@ class Incident(models.Model):
         super().save(*args, **kwargs)
 
         try:
-            if is_new:  # ← only fire Celery for brand new incidents
+            if is_new:
                 from incidents.tasks import check_single_incident_sla
                 check_single_incident_sla.delay(self.id)
         except Exception:
@@ -109,13 +132,11 @@ class Incident(models.Model):
         if not self.due_at:
             return
 
-        # ── Skip if already both overdue and escalated ──
         if self.is_overdue and self.is_escalated:
             return
 
         now = timezone.now()
 
-        # ── Mark overdue ──
         if now > self.due_at and not self.is_overdue:
             self.is_overdue = True
             self.save(update_fields=["is_overdue"])
@@ -126,7 +147,6 @@ class Incident(models.Model):
                 action="SLA deadline passed — Incident marked as overdue"
             )
 
-            # Collect recipients
             recipients = []
             if self.assigned_to and self.assigned_to.email:
                 recipients.append(self.assigned_to.email)
@@ -162,7 +182,6 @@ Please take immediate action to resolve this incident.
                     fail_silently=True,
                 )
 
-        # ── Escalate ──
         if now > self.due_at and not self.is_escalated:
             self.is_escalated = True
             self.priority = "CRITICAL"
@@ -254,3 +273,70 @@ class Activity(models.Model):
     def __str__(self):
         username = self.user.username if self.user else "System"
         return f"{username} — {self.action}"
+
+
+# ===============================
+# NOTIFICATIONS
+# ===============================
+class Notification(models.Model):
+    NOTIFICATION_TYPES = [
+        ('incident_assigned', 'Incident Assigned to You'),
+        ('incident_created', 'New Incident Created'),
+        ('status_changed', 'Incident Status Changed'),
+        ('sla_breach', 'SLA Breached'),
+        ('sla_warning', 'SLA Warning'),
+        ('comment_added', 'Comment Added'),
+        ('escalated', 'Incident Escalated'),
+        ('attachment_added', 'Attachment Added'),
+    ]
+
+    recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='notifications',
+    )
+    incident = models.ForeignKey(
+        'Incident',
+        on_delete=models.CASCADE,
+        related_name='notifications',
+        null=True,
+        blank=True,
+    )
+    notif_type = models.CharField(max_length=50, choices=NOTIFICATION_TYPES)
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"[{self.notif_type}] → {self.recipient.username}: {self.title}"
+
+
+# ===============================
+# POSTMORTEM
+# ===============================
+class Postmortem(models.Model):
+    incident = models.OneToOneField(
+        Incident,
+        on_delete=models.CASCADE,
+        related_name='postmortem'
+    )
+    root_cause = models.TextField()
+    impact = models.TextField()
+    resolution = models.TextField()
+    prevention = models.TextField()
+    author = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='postmortems'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Postmortem for Incident #{self.incident.id}"

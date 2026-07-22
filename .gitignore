@@ -10,8 +10,9 @@ node_modules/
 frontend/node_modules/
 media/
 frontend/build/
-celerybeat-schedule
+celerybeat-schedule*
 celerybeat.pid
 .coverage
 htmlcov/
 staticfiles/
+venv311/

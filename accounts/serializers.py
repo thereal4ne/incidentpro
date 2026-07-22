@@ -6,7 +6,7 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         data = super().validate(attrs)
         user = self.user
         try:
-            role = user.userprofile.role
+            role = user.profile.role
         except Exception:
             role = "EMPLOYEE"
         data["role"] = role

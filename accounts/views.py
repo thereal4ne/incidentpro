@@ -1,4 +1,3 @@
-# accounts/views.py
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import permissions
@@ -11,7 +10,8 @@ from django.conf import settings
 import secrets
 import string
 from .models import UserProfile
-
+from django_ratelimit.decorators import ratelimit
+from django.utils.decorators import method_decorator
 
 # -------------------------------
 # Custom JWT Token Serializer
@@ -20,10 +20,13 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
         user = self.user
-        try:
-            role = user.userprofile.role
-        except UserProfile.DoesNotExist:
-            role = "EMPLOYEE"
+        if user.is_superuser:
+            role = "ADMIN"
+        else:
+            try:
+                role = user.userprofile.role
+            except UserProfile.DoesNotExist:
+                role = "EMPLOYEE"
         data["username"] = user.username
         data["role"] = role
         return data
@@ -32,9 +35,9 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 # -------------------------------
 # Custom JWT Token View
 # -------------------------------
+@method_decorator(ratelimit(key='ip', rate='5/m', block=True), name='dispatch')
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
-
 
 # -------------------------------
 # Current user info
@@ -42,11 +45,13 @@ class MyTokenObtainPairView(TokenObtainPairView):
 @api_view(["GET"])
 @permission_classes([permissions.IsAuthenticated])
 def current_user(request):
-    try:
-        profile = request.user.userprofile
-        role = profile.role
-    except UserProfile.DoesNotExist:
-        role = "EMPLOYEE"
+    if request.user.is_superuser:
+        role = "ADMIN"
+    else:
+        try:
+            role = request.user.userprofile.role
+        except UserProfile.DoesNotExist:
+            role = "EMPLOYEE"
     return Response({
         "username": request.user.username,
         "email": request.user.email,

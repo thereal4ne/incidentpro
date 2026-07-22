@@ -2,14 +2,37 @@ version: '3.9'
 
 services:
 
+  # ── PostgreSQL ──
+  db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: incidentpro
+      POSTGRES_USER: incidentpro_user
+      POSTGRES_PASSWORD: incidentpro_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U incidentpro_user -d incidentpro"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # ── Redis ──
   redis:
     image: redis:7-alpine
     restart: always
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # ── Django Backend ──
+  # ── Django Backend (Daphne ASGI) ──
   web:
     build:
       context: .
@@ -20,9 +43,16 @@ services:
     env_file:
       - .env
     environment:
+      - DB_HOST=db
+      - DB_PORT=5432
       - CELERY_BROKER_URL=redis://redis:6379/0
+      - ALLOWED_HOSTS=127.0.0.1,localhost,0.0.0.0,*
+      - DJANGO_CHANNEL_LAYERS_HOST=redis
     depends_on:
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     volumes:
       - media_files:/app/media
 
@@ -36,10 +66,15 @@ services:
     env_file:
       - .env
     environment:
+      - DB_HOST=db
+      - DB_PORT=5432
       - CELERY_BROKER_URL=redis://redis:6379/0
+      - ALLOWED_HOSTS=127.0.0.1,localhost,0.0.0.0,*
     depends_on:
-      - redis
-      - web
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     volumes:
       - media_files:/app/media
 
@@ -53,10 +88,15 @@ services:
     env_file:
       - .env
     environment:
+      - DB_HOST=db
+      - DB_PORT=5432
       - CELERY_BROKER_URL=redis://redis:6379/0
+      - ALLOWED_HOSTS=127.0.0.1,localhost,0.0.0.0,*
     depends_on:
-      - redis
-      - web
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     volumes:
       - media_files:/app/media
 
@@ -73,7 +113,4 @@ services:
 
 volumes:
   media_files:
-
-environment:
-  - CELERY_BROKER_URL=redis://redis:6379/0
-  - ALLOWED_HOSTS=127.0.0.1,localhost,0.0.0.0
+  postgres_data:

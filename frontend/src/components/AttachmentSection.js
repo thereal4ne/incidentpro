@@ -59,12 +59,26 @@ export default function AttachmentSection({ incidentId, token, userRole }) {
     fetchAttachments();
   };
 
-  const handleDownload = (id) => {
-    window.open(
+ const handleDownload = async (id, filename) => {
+  try {
+    const res = await fetch(
       `${API}/api/incidents/${incidentId}/attachments/${id}/download/`,
-      "_blank"
+      { headers: { Authorization: `Bearer ${token}` } }
     );
-  };
+    if (!res.ok) { alert("Download failed."); return; }
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename || `attachment_${id}`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (e) {
+    alert("Download failed.");
+  }
+};
 
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this attachment?"))
@@ -129,7 +143,7 @@ export default function AttachmentSection({ incidentId, token, userRole }) {
               <div className="mt-2 d-flex justify-content-between">
                 <button
                   className="btn btn-sm btn-outline-primary"
-                  onClick={() => handleDownload(a.id)}
+                   onClick={() => handleDownload(a.id, a.original_filename)}
                 >
                   Download
                 </button>

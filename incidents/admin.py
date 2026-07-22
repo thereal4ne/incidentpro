@@ -1,5 +1,8 @@
 from django.contrib import admin
-from .models import Incident, Comment, Attachment, Activity
+from .models import (
+    Incident, Comment, Attachment, Activity,
+    Notification, Postmortem
+)
 
 
 @admin.register(Incident)
@@ -35,3 +38,16 @@ class AttachmentAdmin(admin.ModelAdmin):
 class ActivityAdmin(admin.ModelAdmin):
     list_display = ("id", "incident", "user", "action", "created_at")
     search_fields = ("action",)
+    list_filter = ("created_at",)
+
+
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ['recipient', 'notif_type', 'title', 'is_read', 'created_at']
+    list_filter = ['notif_type', 'is_read']
+    search_fields = ['title', 'message', 'recipient__username']
+
+
+@admin.register(Postmortem)
+class PostmortemAdmin(admin.ModelAdmin):
+    list_display = ('incident', 'author', 'created_at')

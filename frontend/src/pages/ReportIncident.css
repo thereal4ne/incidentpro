@@ -1,0 +1,224 @@
+/* ReportIncident.css — dark enterprise theme */
+
+.ri-page { min-height: 100vh; background: var(--bg); }
+
+.ri-content {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 32px 36px 80px;
+  animation: fadeUp 0.3s ease both;
+}
+
+/* ── Page header ── */
+.ri-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 36px;
+  gap: 16px;
+}
+
+.ri-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-1);
+  letter-spacing: -0.02em;
+  margin: 0 0 4px;
+}
+.ri-subtitle {
+  font-size: 13px;
+  color: var(--text-2);
+  margin: 0;
+}
+
+.ri-back-btn {
+  background: var(--surface-2);
+  color: var(--text-2);
+  border: 1px solid var(--border);
+  padding: 8px 16px;
+  border-radius: var(--r);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--t-fast), border-color var(--t-fast), color var(--t-fast);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.ri-back-btn:hover {
+  background: var(--surface-3);
+  border-color: var(--border-2);
+  color: var(--text-1);
+}
+
+/* ── Centered form wrapper ── */
+.ri-form-wrap {
+  display: flex;
+  justify-content: center;
+}
+
+.ri-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  padding: 36px 40px;
+  width: min(580px, 100%);
+  box-shadow: 0 0 0 1px rgba(59,130,246,0.04), 0 24px 60px rgba(0,0,0,0.3);
+}
+
+/* ── Form fields ── */
+.ri-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.ri-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.ri-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+  letter-spacing: 0.03em;
+}
+
+.ri-input,
+.ri-select {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 11px 14px;
+  color: var(--text-1);
+  font-family: var(--font);
+  font-size: 14px;
+  outline: none;
+  transition: border-color var(--t-fast), box-shadow var(--t-fast);
+  width: 100%;
+  appearance: none;
+}
+.ri-input:focus,
+.ri-select:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+.ri-input::placeholder { color: var(--text-3); }
+.ri-select option { background: var(--surface-2); }
+
+.ri-textarea {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 11px 14px;
+  color: var(--text-1);
+  font-family: var(--font);
+  font-size: 14px;
+  outline: none;
+  transition: border-color var(--t-fast), box-shadow var(--t-fast);
+  width: 100%;
+  resize: vertical;
+  min-height: 120px;
+  line-height: 1.6;
+}
+.ri-textarea:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+.ri-textarea::placeholder { color: var(--text-3); }
+
+/* ── Priority selector ── */
+.ri-priority-group {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.ri-priority-btn {
+  padding: 8px 12px;
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--t-fast);
+  text-align: center;
+}
+.ri-priority-btn:hover {
+  border-color: var(--border-2);
+  color: var(--text-1);
+  background: var(--surface-3);
+}
+.ri-priority-btn--active {
+  font-weight: 600;
+}
+
+/* ── Two-col row ── */
+.ri-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+/* ── Submit ── */
+.ri-submit-btn {
+  width: 100%;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 12px;
+  border-radius: var(--r);
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--t-fast), box-shadow var(--t-fast), transform 80ms ease;
+  margin-top: 4px;
+  letter-spacing: 0.01em;
+}
+.ri-submit-btn:hover {
+  background: var(--accent-h);
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+.ri-submit-btn:active  { transform: scale(0.99); }
+.ri-submit-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* ── Error ── */
+.ri-error {
+  background: var(--danger-dim);
+  border: 1px solid var(--p-critical-border);
+  color: #F87171;
+  padding: 10px 14px;
+  border-radius: var(--r);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* ── Success state ── */
+.ri-success {
+  text-align: center;
+  padding: 40px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  animation: fadeUp 0.3s ease both;
+}
+.ri-success-icon { font-size: 40px; }
+.ri-success h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-1);
+}
+.ri-success p { font-size: 13px; color: var(--text-2); }
+
+@media (max-width: 640px) {
+  .ri-content { padding: 20px 16px 60px; }
+  .ri-card    { padding: 24px 20px; }
+  .ri-priority-group { grid-template-columns: repeat(2, 1fr); }
+}
