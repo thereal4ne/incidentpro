@@ -10,7 +10,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get('SECRET_KEY')
 if not SECRET_KEY:
-    raise ValueError("SECRET_KEY environment variable is not set!")
+    import sys
+    # Allow a fallback key during CI/CD test runs or local debug development
+    if 'test' in sys.argv or os.environ.get('DEBUG', 'True') == 'True':
+        SECRET_KEY = 'django-insecure-dummy-key-for-test-environments'
+    else:
+        raise ValueError("SECRET_KEY environment variable is not set!")
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
 
