@@ -1,196 +1,206 @@
 # IncidentPro 🛡️
 
-A full-stack **Incident Management System** with automated SLA enforcement, real-time dashboard updates, role-based access control, and automated email notifications.
+A production-ready, full-stack **Incident Response & SLA Management Platform** featuring real-time WebSocket communication, background SLA monitoring & escalation queues, dynamic PDF reporting, and role-based access control.
 
-Built with **Django REST Framework** + **React.js** + **Celery** + **Redis**.
-
----
-
-## Features
-
-- 🔐 **Role-Based Access Control** — Admin and Employee roles with permission enforcement at both API and UI level
-- ⏰ **Automated SLA Deadlines** — Deadlines auto-assigned on incident creation based on priority (Critical: 2hrs, High: 8hrs, Medium: 24hrs, Low: 72hrs)
-- 🤖 **Async SLA Monitoring** — Celery workers monitor open incidents in the background via Celery Beat periodic tasks
-- 🚨 **Auto Escalation** — Breached incidents are automatically marked overdue, escalated to Critical priority, and reassigned to admin
-- 📧 **Email Notifications** — Automated breach alerts sent to assigned user, reporter, and all admins via Gmail SMTP
-- 📊 **Real-Time Dashboard** — Live polling updates incidents, activity logs, and comments every 2 seconds
-- 📋 **Audit Trail** — Every action logged — status changes, comments, attachments, SLA breaches, escalations
-- 📎 **File Attachments** — Secure upload, download, and soft-delete with permission checks
-- 💬 **Comments System** — Stakeholder collaboration on incidents with full activity log integration
-- 🔄 **CI/CD Pipeline** — GitHub Actions with linting, security scanning, test coverage, and auto-deploy to Render
+Built with **Django REST Framework** + **Django Channels (WebSockets)** + **React** + **PostgreSQL** + **Celery** + **Redis** + **Docker**.
 
 ---
 
-## Tech Stack
+## 🌟 Key Features
+
+- ⚡ **Real-Time WebSocket Updates** — Instant in-app notification alerts and live incident dashboard updates using **Django Channels (ASGI)** and Redis.
+- ⏰ **Automated SLA Enforcement** — Deadlines automatically calculated on creation based on priority (Critical: 2h, High: 8h, Medium: 24h, Low: 72h).
+- 🤖 **Background Workers & Celery Beat** — Periodic background tasks evaluate open tickets, mark overdue items, auto-escalate priority to Critical, and reassign to admins.
+- 🛡️ **Fault-Tolerant Broker Fallbacks** — Resilient view handlers detect Redis/Celery connection outages and dynamically fallback to synchronous execution (`.apply()`) to guarantee API uptime.
+- 🔐 **Role-Based Access Control (RBAC)** — Strict separation between Admin and Employee capabilities at both API and UI levels.
+- 📄 **Dynamic PDF Report Generation** — Export complete incident lifecycle histories, activity logs, and comments into styled, watermarked PDF documents via **ReportLab**.
+- 📝 **Postmortem Analysis & Audit Logs** — Log root cause, impact, resolution, and prevention for resolved incidents alongside detailed, granular activity timelines.
+- 🛡️ **XSS Input Sanitization** — All incoming text fields sanitized using `bleach` to prevent cross-site scripting attacks.
+- 📊 **Interactive Analytics** — Admin overview dashboard powered by **Recharts** displaying incident trends, status distribution, and SLA breach rates.
+- 🧪 **112 Passing Tests & 85% Code Coverage** — Thorough test suite with mocked failure scenarios, verified by GitHub Actions.
+
+---
+
+## 🛠️ Tech Stack
 
 | Layer | Technology |
 |---|---|
-| Frontend | React.js, React Router, CSS3 |
-| Backend | Django 5.x, Django REST Framework |
-| Authentication | SimpleJWT (JSON Web Tokens) |
-| Task Queue | Celery |
-| Message Broker | Redis (Docker) |
-| Email | Django SMTP + Gmail |
-| Database | SQLite |
-| CI/CD | GitHub Actions |
-| Deployment | Render |
+| **Frontend** | React (v19), React Router DOM (v7), Recharts, Axios, CSS3 |
+| **Backend API** | Django 5.x, Django REST Framework (DRF) |
+| **Real-Time & Async** | Django Channels (ASGI), Celery, Redis |
+| **Authentication** | SimpleJWT (JSON Web Tokens) + Token Rotation |
+| **Database** | PostgreSQL 16 (Dockerized) |
+| **Document Export** | ReportLab |
+| **Security & Utilities** | Bleach (XSS Sanitization), Python-Magic (MIME Validation), Django Ratelimit |
+| **DevOps & CI/CD** | Docker, Docker Compose, GitHub Actions (Flake8, Bandit, Coverage) |
 
 ---
 
-## Project Structure
+## 📁 Project Structure
+
 ```
 cicdproject/
-├── incidents/              # Django app
-│   ├── models.py           # Incident, Comment, Attachment, Activity
-│   ├── views.py            # REST API endpoints
-│   ├── tasks.py            # Celery tasks
-│   ├── urls.py             # URL routing
-│   └── services/
-│       └── sla_service.py  # SLA evaluation logic
-├── cicdproject/            # Django project config
-│   ├── settings.py
-│   └── celery.py
-├── frontend/               # React.js SPA
+├── incidents/                  # Core Incident Management App
+│   ├── models.py               # Incident, Comment, Attachment, Activity, Notification, Postmortem
+│   ├── views.py                # REST API endpoints & PDF generation
+│   ├── tasks.py                # Celery background tasks
+│   ├── consumers.py            # Django Channels WebSocket consumers
+│   ├── routing.py              # WebSocket URL routing
+│   ├── serializers.py          # DRF serializers & input sanitization
+│   └── tests/                  # Unit & Integration test suite (112 tests)
+├── accounts/                   # User & RBAC Management App
+│   ├── models.py               # UserProfile model
+│   └── views.py                # User management & authentication views
+├── cicdproject/                # Project Configuration
+│   ├── settings.py             # Settings (Environment-driven)
+│   ├── asgi.py                 # ASGI entrypoint for WebSockets
+│   └── celery.py               # Celery app initialization
+├── frontend/                   # React SPA Frontend
 │   └── src/
-│       ├── App.js
-│       ├── App.css
-│       ├── Login.js
-│       └── pages/
-│           └── ReportIncident.js
-├── .github/
-│   └── workflows/
-│       └── ci.yml          # GitHub Actions pipeline
-├── manage.py
-├── requirements.txt
-└── start.bat               # One-click startup (Windows)
+│       ├── components/         # NotificationBell, Sidebar, AttachmentSection
+│       └── pages/              # AdminHome, EmployeeHome, IncidentDetail, ManageUsers
+├── .github/workflows/ci.yml    # GitHub Actions CI/CD Pipeline
+├── docker-compose.yml          # Multi-container orchestration
+├── Dockerfile                  # Production container build
+├── requirements.txt            # Python dependencies
+└── manage.py
 ```
 
 ---
 
-## Getting Started
+## 🚀 Getting Started
 
-### Prerequisites
-- Python 3.11+
-- Node.js 18+
-- Docker (for Redis)
+### Option A: Running with Docker Compose (Recommended)
 
-### 1. Clone the repository
-```bash
-git clone https://github.com/yourusername/cicdproject.git
-cd cicdproject
-```
+The easiest way to run the entire stack (PostgreSQL, Redis, Celery, Celery Beat, Django, and React) is with Docker Compose:
 
-### 2. Set up the backend
-```bash
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py createsuperuser
-```
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/yourusername/cicdproject.git
+   cd cicdproject
+   ```
 
-### 3. Configure email in `settings.py`
-```python
-EMAIL_HOST_USER = 'your_gmail@gmail.com'
-EMAIL_HOST_PASSWORD = 'your_app_password'
-DEFAULT_FROM_EMAIL = 'IncidentPro <your_gmail@gmail.com>'
-```
+2. **Configure environment variables (`.env`):**
+   Create a `.env` file in the root directory:
+   ```env
+   SECRET_KEY="your-secret-key"
+   DEBUG=True
+   ALLOWED_HOSTS=127.0.0.1,localhost
+   DB_NAME=incidentpro
+   DB_USER=incidentpro_user
+   DB_PASSWORD=incidentpro_pass
+   DB_HOST=localhost
+   DB_PORT=5432
+   EMAIL_HOST_USER=your-email@gmail.com
+   EMAIL_HOST_PASSWORD=your-app-password
+   ```
 
-### 4. Start Redis
-```bash
-docker run -d -p 6379:6379 --name redis redis:7
-```
-
-### 5. Start Celery
-```bash
-celery -A cicdproject worker --loglevel=info --pool=solo
-celery -A cicdproject beat --loglevel=info
-```
-
-### 6. Start frontend
-```bash
-cd frontend
-npm install
-npm start
-```
-
-### 7. Start Django
-```bash
-python manage.py runserver
-```
-
-> **Windows shortcut:** Place `start.bat` in the project root and double-click to start all servers at once.
+3. **Spin up containers:**
+   ```bash
+   docker-compose up --build
+   ```
+   * **Frontend:** `http://localhost:3000`
+   * **Backend API:** `http://localhost:8000/api/`
+   * **Swagger API Docs:** `http://localhost:8000/api/docs/`
 
 ---
 
-## SLA Policy
+### Option B: Local Manual Setup
 
-| Priority | Deadline |
-|---|---|
-| 🔴 Critical | 2 hours |
-| 🟠 High | 8 hours |
-| 🟡 Medium | 24 hours |
-| 🟢 Low | 72 hours |
+If you prefer to run services manually:
 
-When an SLA is breached the system automatically marks the incident overdue, escalates priority to Critical, reassigns to admin, and sends email alerts to all stakeholders.
+1. **Start Redis and PostgreSQL containers:**
+   ```bash
+   docker run -d -p 6379:6379 --name redis redis:7-alpine
+   docker run -d -p 5432:5432 -e POSTGRES_DB=incidentpro -e POSTGRES_USER=incidentpro_user -e POSTGRES_PASSWORD=incidentpro_pass --name postgres postgres:16-alpine
+   ```
+
+2. **Set up virtual environment & install backend dependencies:**
+   ```bash
+   python -m venv venv311
+   source venv311/bin/activate  # On Windows: .\venv311\Scripts\activate
+   pip install -r requirements.txt
+   ```
+
+3. **Run database migrations:**
+   ```bash
+   python manage.py migrate
+   python manage.py createsuperuser
+   ```
+
+4. **Start Celery worker & Celery Beat scheduler:**
+   ```bash
+   celery -A cicdproject worker --loglevel=info --pool=solo
+   celery -A cicdproject beat --loglevel=info
+   ```
+
+5. **Start Django ASGI server:**
+   ```bash
+   python manage.py runserver
+   ```
+
+6. **Start React Frontend:**
+   ```bash
+   cd frontend
+   npm install
+   npm start
+   ```
 
 ---
 
-## API Endpoints
+## ⏱️ SLA Policy Matrix
 
-| Method | Endpoint | Description |
+| Priority | Deadline | Auto-Escalation Target |
 |---|---|---|
-| GET/POST | `/api/incidents/` | List or create incidents |
-| PATCH | `/api/incidents/<id>/status/` | Update incident status |
-| GET/POST | `/api/incidents/<id>/comments/` | List or add comments |
-| POST | `/api/incidents/<id>/attachments/` | Upload attachment |
-| GET | `/api/incidents/<id>/attachments/` | List attachments |
-| GET | `/api/incidents/<id>/attachments/<aid>/download/` | Download attachment |
-| DELETE | `/api/incidents/<id>/attachments/<aid>/` | Soft delete attachment |
-| GET | `/api/incidents/<id>/activities/` | Get activity log |
-| GET | `/api/current_user/` | Get current user info |
-| GET | `/api/users/` | List all users (Admin only) |
+| 🔴 **Critical** | 2 Hours | Admin Reassignment + Urgent Email Alert |
+| 🟠 **High** | 8 Hours | Upgraded to Critical + Overdue Flag |
+| 🟡 **Medium** | 24 Hours | Overdue Flag + Stakeholder Alert |
+| 🟢 **Low** | 72 Hours | Overdue Flag + Alert |
 
 ---
 
-## CI/CD Pipeline
+## 🔌 API Endpoints Summary
+
+| Method | Endpoint | Description | Access |
+|---|---|---|---|
+| POST | `/api/token/` | Obtain JWT Access/Refresh tokens | Public |
+| POST | `/api/token/refresh/` | Refresh JWT Access token | Public |
+| GET | `/api/current_user/` | Get current logged-in user details | Authenticated |
+| GET / POST | `/api/incidents/` | List all incidents or create new ticket | Authenticated |
+| GET | `/api/incidents/<id>/` | Detailed incident retrieval | Incident Stakeholders / Admin |
+| PATCH | `/api/incidents/<id>/status/` | Update incident status | Assignee / Admin |
+| POST | `/api/incidents/<id>/escalate/` | Manually escalate an incident | Assignee |
+| PATCH | `/api/incidents/<id>/reassign/` | Reassign incident & de-escalate | Admin Only |
+| GET / POST | `/api/incidents/<id>/comments/` | List or post comments | Stakeholders / Admin |
+| POST | `/api/incidents/<id>/attachments/upload/` | Upload file (Rate-limited) | Stakeholders / Admin |
+| GET | `/api/incidents/<id>/export-pdf/` | Export incident report as PDF | Stakeholders / Admin |
+| GET / POST / PATCH | `/api/incidents/<id>/postmortem/` | Create or update postmortem report | Admin Only |
+| GET / PATCH | `/api/notifications/` | Manage in-app notifications | Authenticated |
+| GET / POST / PATCH | `/api/accounts/employees/` | Admin user & employee management | Admin Only |
+
+---
+
+## 🧪 Testing & CI/CD Pipeline
+
+The project includes **112 passing unit and integration tests** covering WebSocket consumers, JWT authentication, SLA logic, and connection resilience.
+
+```bash
+# Run test suite
+python manage.py test
+
+# Run coverage report
+coverage run manage.py test
+coverage report
 ```
-Push to main
-     ↓
-Install dependencies
-     ↓
-Lint with flake8
-     ↓
-Security scan with Bandit
-     ↓
-Run tests with Coverage (min 70%)
-     ↓
-Deploy to Render (if all checks pass)
-```
+
+### GitHub Actions Pipeline Steps:
+1. **Linting:** Validates code format against PEP 8 using `flake8`.
+2. **Security Scanning:** Scans for python vulnerabilities using `bandit`.
+3. **Database Integration:** Boots up PostgreSQL 16 & Redis 7 container instances inside GitHub Actions runner.
+4. **Coverage Enforcer:** Executes test suite and fails if total code coverage drops below **80%**.
 
 ---
 
-## User Roles
+## 📜 License
 
-| Feature | Admin | Employee |
-|---|---|---|
-| View all incidents | ✅ | ❌ |
-| View own incidents | ✅ | ✅ |
-| Create & assign incidents | ✅ | ❌ |
-| Report incidents | ✅ | ✅ |
-| Change status | ✅ | ✅ (own only) |
-| Delete attachments | ✅ | ❌ |
-| Access Django Admin | ✅ | ❌ |
-
----
-
-## Future Enhancements
-
-- WebSocket support for true real-time updates
-- Email notifications on incident assignment
-- Mobile app
-- Multi-tenant support
-
----
-
-## License
-
-Developed as a college main project submission.
+Developed as a full-stack project submission.
