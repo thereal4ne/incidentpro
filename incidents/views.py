@@ -22,6 +22,7 @@ from .serializers import (
     CommentCreateSerializer,
     PostmortemSerializer,
 )
+from .utils import is_admin_user
 from incidents.tasks import notify_escalation_to_admins
 from django_ratelimit.decorators import ratelimit
 from django.http import FileResponse
@@ -67,9 +68,6 @@ ALLOWED_EXTENSIONS = {
 }
 
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
-
-
-from .utils import is_admin_user
 
 
 # -------------------------------
