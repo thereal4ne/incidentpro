@@ -22,8 +22,11 @@ def evaluate_incident_sla(incident):
 
 
 def evaluate_all_open_incidents():
-
-    open_incidents = Incident.objects.exclude(
+    now = timezone.now()
+    open_incidents = Incident.objects.filter(
+        due_at__isnull=False,
+        due_at__lt=now
+    ).exclude(
         status__in=["RESOLVED", "CLOSED"]
     ).exclude(
         is_overdue=True,

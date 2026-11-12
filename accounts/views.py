@@ -10,6 +10,7 @@ from django.conf import settings
 import secrets
 import string
 from .models import UserProfile
+from incidents.utils import is_admin_user
 from django_ratelimit.decorators import ratelimit
 from django.utils.decorators import method_decorator
 
@@ -73,11 +74,7 @@ def generate_temp_password(length=10):
 @api_view(["POST"])
 @permission_classes([permissions.IsAuthenticated])
 def create_employee(request):
-    is_admin = (
-        request.user.groups.filter(name="ADMIN").exists()
-        or request.user.is_superuser
-    )
-    if not is_admin:
+    if not is_admin_user(request.user):
         return Response(
             {"error": "Only admins can create employee accounts"},
             status=status.HTTP_403_FORBIDDEN
@@ -121,7 +118,7 @@ Your IncidentPro account has been created by the admin.
   Username : {username}
   Password : {temp_password}
 
-Please log in at http://localhost:3000
+Please log in at {settings.FRONTEND_URL}
 
 Regards,
 IncidentPro Team
@@ -149,11 +146,7 @@ IncidentPro Team
 @api_view(["GET"])
 @permission_classes([permissions.IsAuthenticated])
 def list_employees(request):
-    is_admin = (
-        request.user.groups.filter(name="ADMIN").exists()
-        or request.user.is_superuser
-    )
-    if not is_admin:
+    if not is_admin_user(request.user):
         return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
 
     users = User.objects.select_related("userprofile").all().order_by("date_joined")
@@ -182,11 +175,7 @@ def list_employees(request):
 @api_view(["PATCH"])
 @permission_classes([permissions.IsAuthenticated])
 def toggle_employee_status(request, user_id):
-    is_admin = (
-        request.user.groups.filter(name="ADMIN").exists()
-        or request.user.is_superuser
-    )
-    if not is_admin:
+    if not is_admin_user(request.user):
         return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
 
     try:

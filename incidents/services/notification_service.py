@@ -78,37 +78,6 @@ def notify_status_changed(incident, changed_by, old_status, new_status):
         _make(user, incident, 'status_changed', title, message)
 
 
-def notify_sla_breach(incident):
-    """Notify assigned user + all admins of an SLA breach."""
-    recipients = set(User.objects.filter(is_staff=True))
-    if incident.assigned_to:
-        recipients.add(incident.assigned_to)
-
-    title = f'SLA BREACHED: {incident.title}'
-    message = (
-        f'Incident #{incident.id} "{incident.title}" has breached its SLA deadline. '
-        f'Priority has been escalated to Critical and reassigned to admin.'
-    )
-    for user in recipients:
-        _make(user, incident, 'sla_breach', title, message)
-
-
-def notify_sla_warning(incident, minutes_remaining):
-    """Warn the assigned user when the SLA deadline is approaching."""
-    if not incident.assigned_to:
-        return
-    _make(
-        recipient=incident.assigned_to,
-        incident=incident,
-        notif_type='sla_warning',
-        title=f'SLA Warning: {incident.title}',
-        message=(
-            f'Incident #{incident.id} "{incident.title}" SLA deadline is in '
-            f'approximately {minutes_remaining} minutes. Please resolve it soon.'
-        ),
-    )
-
-
 def notify_comment_added(incident, comment_author):
     """
     Notify the incident's assigned user and reporter (excluding the commenter).

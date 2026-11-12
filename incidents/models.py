@@ -3,6 +3,9 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import timedelta
 from django.conf import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Incident(models.Model):
@@ -115,8 +118,8 @@ class Incident(models.Model):
             if is_new:
                 from incidents.tasks import check_single_incident_sla
                 check_single_incident_sla.delay(self.id)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Failed to queue SLA task for incident %s: %s", self.id, e)
 
     # ===============================
     # SLA CHECK & ESCALATION
@@ -125,6 +128,7 @@ class Incident(models.Model):
         from django.contrib.auth.models import User
         from django.core.mail import send_mail
         from django.conf import settings
+        from django.db import transaction
 
         if self.status in ["RESOLVED", "CLOSED"]:
             return
@@ -132,34 +136,66 @@ class Incident(models.Model):
         if not self.due_at:
             return
 
-        if self.is_overdue and self.is_escalated:
-            return
+        send_breach_email = False
+        recipients = []
 
-        now = timezone.now()
+        with transaction.atomic():
+            # Lock the row in PostgreSQL to prevent concurrent escalation
+            locked = Incident.objects.select_for_update().get(pk=self.pk)
 
-        if now > self.due_at and not self.is_overdue:
-            self.is_overdue = True
-            self.save(update_fields=["is_overdue"])
+            if locked.status in ["RESOLVED", "CLOSED"]:
+                return
 
-            Activity.objects.create(
-                incident=self,
-                user=None,
-                action="SLA deadline passed — Incident marked as overdue"
-            )
+            if locked.is_overdue and locked.is_escalated:
+                return
 
-            recipients = []
-            if self.assigned_to and self.assigned_to.email:
-                recipients.append(self.assigned_to.email)
-            if self.reported_by and self.reported_by.email:
-                recipients.append(self.reported_by.email)
-            for admin in User.objects.filter(is_superuser=True):
-                if admin.email and admin.email not in recipients:
-                    recipients.append(admin.email)
+            now = timezone.now()
+            if not locked.due_at or now <= locked.due_at:
+                return
 
-            if recipients:
-                send_mail(
-                    subject=f"[IncidentPro] SLA Breached — {self.title}",
-                    message=f"""
+            if not locked.is_overdue:
+                locked.is_overdue = True
+                Activity.objects.create(
+                    incident=locked,
+                    user=None,
+                    action="SLA deadline passed — Incident marked as overdue"
+                )
+
+                if locked.assigned_to and locked.assigned_to.email:
+                    recipients.append(locked.assigned_to.email)
+                if locked.reported_by and locked.reported_by.email:
+                    recipients.append(locked.reported_by.email)
+                for admin in User.objects.filter(is_superuser=True):
+                    if admin.email and admin.email not in recipients:
+                        recipients.append(admin.email)
+
+                send_breach_email = bool(recipients)
+
+            if not locked.is_escalated:
+                locked.is_escalated = True
+                locked.priority = "CRITICAL"
+
+                admin = User.objects.filter(is_superuser=True).first()
+                if admin:
+                    locked.assigned_to = admin
+
+                Activity.objects.create(
+                    incident=locked,
+                    user=None,
+                    action="SLA breached — Incident escalated to CRITICAL and reassigned to admin"
+                )
+
+            locked.save(update_fields=["is_overdue", "is_escalated", "priority", "assigned_to"])
+
+            self.is_overdue = locked.is_overdue
+            self.is_escalated = locked.is_escalated
+            self.priority = locked.priority
+            self.assigned_to = locked.assigned_to
+
+        if send_breach_email and recipients:
+            send_mail(
+                subject=f"[IncidentPro] SLA Breached — {self.title}",
+                message=f"""
 Hello,
 
 This is an automated alert from IncidentPro.
@@ -176,26 +212,10 @@ The following incident has breached its SLA deadline:
 Please take immediate action to resolve this incident.
 
 — IncidentPro Automated Alerts
-                    """.strip(),
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=recipients,
-                    fail_silently=True,
-                )
-
-        if now > self.due_at and not self.is_escalated:
-            self.is_escalated = True
-            self.priority = "CRITICAL"
-
-            admin = User.objects.filter(is_superuser=True).first()
-            if admin:
-                self.assigned_to = admin
-
-            self.save(update_fields=["is_escalated", "priority", "assigned_to"])
-
-            Activity.objects.create(
-                incident=self,
-                user=None,
-                action="SLA breached — Incident escalated to CRITICAL and reassigned to admin"
+                """.strip(),
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=recipients,
+                fail_silently=True,
             )
 
 

@@ -69,17 +69,7 @@ ALLOWED_EXTENSIONS = {
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
 
-# ── Helper ────────────────────────────────────────────────────────────────────
-def is_admin_user(user):
-    if user.is_superuser:
-        return True
-    try:
-        if user.userprofile.role == "ADMIN":
-            return True
-    except (ObjectDoesNotExist, AttributeError):
-        pass
-    # Also support Django Group-based admin assignment
-    return user.groups.filter(name="ADMIN").exists()
+from .utils import is_admin_user
 
 
 # -------------------------------
@@ -113,8 +103,21 @@ def incident_api(request):
         if search:
             incidents = incidents.filter(title__icontains=search)
 
-        page_size = int(request.GET.get("page_size", 20))
-        page_number = int(request.GET.get("page", 1))
+        try:
+            page_size = int(request.GET.get("page_size", 20))
+            page_number = int(request.GET.get("page", 1))
+            if page_size < 1 or page_number < 1:
+                return Response(
+                    {"error": "page and page_size must be positive integers."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            page_size = min(page_size, 1000)
+        except (ValueError, TypeError):
+            return Response(
+                {"error": "Invalid pagination parameters."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         paginator = Paginator(incidents, page_size)
         page = paginator.get_page(page_number)
 

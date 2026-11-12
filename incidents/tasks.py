@@ -77,15 +77,17 @@ Please log in to IncidentPro and reassign or take action on this incident.
             )
 
         for admin in admins:
-            Notification.objects.create(
+            Notification.objects.get_or_create(
                 recipient=admin,
                 incident=incident,
                 notif_type='escalated',
-                title=f"Incident #{incident.id} Escalated",
-                message=(
-                    f"{escalated_by_username} escalated incident '{incident.title}'. "
-                    f"Reason: {reason if reason else 'Not provided'}"
-                ),
+                defaults={
+                    'title': f"Incident #{incident.id} Escalated",
+                    'message': (
+                        f"{escalated_by_username} escalated incident '{incident.title}'. "
+                        f"Reason: {reason if reason else 'Not provided'}"
+                    ),
+                }
             )
             broadcast_notification_update(admin.id)
 
