@@ -14,5 +14,6 @@ celerybeat-schedule*
 celerybeat.pid
 .coverage
 htmlcov/
+node_modules/
 staticfiles/
 venv311/
